@@ -165,8 +165,9 @@ const JS_ENTRY: &str = "<script type=\"module\" src=\"./app.js\"></script>";
 /// adoption. It also starts the runtime, by the page's policy
 /// ([`activate_js`]): an `eager` page's after its first paint, once the
 /// document is parsed; an `idle` page's when the browser is idle after
-/// `load`; an `interaction` page's at the first press or edit, as every
-/// page's at a press that comes first.
+/// `load`; an `interaction` page's at the first press or edit, or at once
+/// where the device keeps a secret (LLP 1048.003 D5); and every page's at a
+/// press that comes first.
 pub fn capture_js() -> &'static str {
     concat!(
         include_str!("../../web/scheme.js"),

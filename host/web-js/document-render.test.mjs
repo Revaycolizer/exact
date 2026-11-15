@@ -1,9 +1,9 @@
 import { beforeAll, test, expect } from 'bun:test';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { webCompiler } from './module.mjs';
 import { open } from '../../scripts/agent.mjs';
-import { suiteBrowser } from '../../scripts/agent-launch.mjs';
+import { appDigest, suiteBrowser } from '../../scripts/agent-launch.mjs';
 import { renderedPages, warmRustRenderer } from './rendered-pages.mjs';
 
 beforeAll(warmRustRenderer, 1_800_000);
@@ -961,6 +961,38 @@ const decided = page => page.evaluate(() => new Promise(done => {
   new PerformanceObserver((_, o) => { o.disconnect(); requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(done))); })
     .observe({ type: 'paint', buffered: true });
 }));
+
+// LLP 1048.003 D5: a kept device secret starts the runtime of a page that waits for the reader, which then asks an answer
+// that read the store again (LLP 1048.000 D6), so the anonymous document gives way to the reader's account state.
+test('a JavaScript-rendered page that waits for the reader wakes where the device keeps a secret, and reads it', async () => {
+  await renderedPages(`routes nav
+  home "/" render=build
+
+component App
+  resource name = signedIn() as shape string
+  view
+    main
+      text name
+`, async (_, html, dist) => {
+    expect(html('')).toContain('data-activate="interaction"');
+    const server = Bun.serve({ hostname: '127.0.0.1', port: 0, fetch: req => new Response(Bun.file(resolve(dist, new URL(req.url).pathname.slice(1) || 'index.html'))) });
+    // A development build keeps its store under the app directory's digest (rt.js `Kept`)
+    const key = `exact.secret.@${appDigest(realpathSync(dirname(dist)))}/name`, browser = await suiteBrowser();
+    try {
+      for (const kept of [null, 'ada']) {
+        const page = await browser.newPage();
+        if (kept) await page.addInitScript(([key, name]) => localStorage.setItem(key, name), [key, kept]);
+        await page.goto(server.url.href);
+        await decided(page);
+        expect([kept, await page.evaluate(() => !!globalThis.exact?.ready)]).toEqual([kept, !!kept]);
+        if (kept) await page.waitForFunction(name => document.querySelector('main')?.textContent === name, kept, { timeout: 5000 }).catch(() => {});
+        expect([kept, await page.evaluate(() => document.querySelector('main')?.textContent)]).toEqual([kept, kept ?? 'nobody']);
+      }
+    } finally { await browser.close(); server.stop(true); }
+  }, { 'app.ts': `export const grants = 'secret.keep name';
+export const answer = (_name: string, _args: unknown[], store: { get(name: string): string | null }): string => store.get('name') ?? 'nobody';
+` });
+}, 180000);
 
 // LLP 1048.003 D4: only the shown route's `scroll document` is the page's scroller. A hidden route's is
 // `data-exact-offpage`, scrolling inside its bound, so its content leaves the page's height; each route keeps its own
