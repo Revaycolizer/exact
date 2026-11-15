@@ -120,9 +120,9 @@ fn force_and_inertia_round_trip_and_survive_patches() {
         bounce_combine: BounceCombine::Average,
         ..Collider::default()
     };
-    assert!(!json::to_string(&Collider::default())
+    assert!(json::to_string(&Collider::default())
         .unwrap()
-        .contains("bounce_combine"));
+        .contains("\"bounce_combine\":{\"Max\":{}}"));
     assert!(json::to_string(&average)
         .unwrap()
         .contains("\"bounce_combine\":{\"Average\""));
@@ -143,6 +143,34 @@ fn force_and_inertia_round_trip_and_survive_patches() {
         physics::step(&mut r);
         assert_eq!(r.hash(), w.hash());
     }
+}
+
+// A save writes every collider field, so decoding one into a collider with a
+// non-default rule or extras replaces them; a patch still keeps what it omits.
+#[test]
+fn a_saved_collider_replaces_its_bounce_rule_and_extras() {
+    let changed = Collider {
+        bounce_combine: BounceCombine::Multiply,
+        extra: vec![ExtraShape {
+            shape: Shape::Sphere { radius: 0.25 },
+            ..ExtraShape::default()
+        }],
+        ..Collider::default()
+    };
+    let plain = json::to_string(&Collider::default()).unwrap();
+    assert!(plain.contains("\"extra\":[]"), "{plain}");
+    let mut read = changed.clone();
+    json::read_into(&plain, &mut read).unwrap();
+    assert_eq!(read, Collider::default());
+    let mut read = changed.clone();
+    bin::read_into(&bin::to_vec(&Collider::default()), &mut read).unwrap();
+    assert_eq!(read, Collider::default());
+    let mut patched = changed.clone();
+    json::read_into(r#"{"bounce":0.5}"#, &mut patched).unwrap();
+    assert_eq!(
+        (patched.bounce_combine, patched.extra),
+        (changed.bounce_combine, changed.extra)
+    );
 }
 
 // A drop's rebound speed over its impact speed is the pair's restitution: the
@@ -307,7 +335,7 @@ fn extra_colliders_share_the_body_and_filter_by_their_own_layers() {
     }
     assert!(x(&w, die) > x(&w, other) + 0.5, "passed through");
     let json = exact_game::json::to_string(&*w.get::<Collider>(die).unwrap()).unwrap();
-    assert!(!json.contains("extra"), "{json}");
+    assert!(json.contains("\"extra\":[]"), "{json}");
 }
 
 #[test]

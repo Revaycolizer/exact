@@ -30,10 +30,10 @@ the actual `displacement` and `grounded` state.
   in the Rapier snapshot and replays exactly after a restore. Friction combines
   geometrically. Restitution combines by `Collider::bounce_combine`: `Max` (the
   default), `Multiply`, `Min` or `Average`; a pair whose colliders differ takes the
-  later of those (Rapier's priority), so `Average` needs both. A body writes every
-  field, including default `ccd`, `force` and `inertia` values, so decoding it into
-  an existing body replaces them. A patch keeps fields it omits. A collider writes
-  `bounce_combine` only when non-default. Contact slop is 0.1 mm; other integration defaults
+  later of those (Rapier's priority), so `Average` needs both. A body and a
+  collider write every field, including default `ccd`, `force`, `inertia`,
+  `bounce_combine` and `extra` values, so decoding one into an existing value
+  replaces them. A patch keeps fields it omits. Contact slop is 0.1 mm; other integration defaults
   are Rapier's. The Physics resource sets the solver: `solver_iterations` (substeps,
   4), `contact_frequency` and `static_contact_frequency` (the contact springs
   between moving bodies and against a fixed one, 30 and 60 Hz),
