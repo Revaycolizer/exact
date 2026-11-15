@@ -1,10 +1,10 @@
 {
   "ticks": {
-    "0": "0x68106967367bba41",
-    "1080": "0xda0f6d59b34ce9c4"
+    "0": "0x91f4a0b6b05493ae",
+    "1080": "0x7f3d4d796c3be783"
   },
   "saves": {
-    "continuation": "d23255568890326954b52638fc343ea277c95f9b27cfce2e06bfa46a7a70215c"
+    "continuation": "ce1249dbb1f210d1580f9784c4443805771deab664309d556a32905ffc9ce410"
   },
   "hosts": [
     "linux",
@@ -18,10 +18,10 @@
   "profiles": [
     "gpu-dev"
   ],
-  "inputs": "a07fe6f24747d81d8171210ef02975e0d886592c509ac3800c1f70ae7b69c901",
-  "sourceInputs": "1665d7feccd0febdec7c1e7e27b571c14e0feea927b0cddfa50670cce83931f6",
+  "inputs": "8f671a0efbf92826213240ab457575cc88a37d15077f7bf39e16eba9a7ed6f1c",
+  "sourceInputs": "8b714136e666c05655c123e36672968043ea124c3346d3ecf54f686dface63b4",
   "game": "rivals",
   "generated": "bun game/prove.mjs rivals --repin --hosts 'linux,web'",
-  "at": "6c0919ce30568f0df0724536667df9afdf36ad29",
-  "reason": "Body records write default ccd, force and inertia"
+  "at": "d1a71d7cb6bb4477f452f9c7351c49bc9b88adb3",
+  "reason": "Colliders write bounce_combine and extra always, so decoding a save replaces them; saved bytes and hashes move. Web tick 0 agreed with Linux; later web samples could not run here because Chrome falls back to SwiftShader."
 }
